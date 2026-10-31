@@ -1,151 +1,913 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>کلیکر</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Emberfall: Realm of Shards</title>
     <style>
-      :root {
-        --bg: var(--tg-theme-bg-color, #f3f6f4);
-        --text: var(--tg-theme-text-color, #14231c);
-        --hint: var(--tg-theme-hint-color, #6b7d74);
-        --btn: var(--tg-theme-button-color, #1f9d6b);
-        --btn-text: var(--tg-theme-button-text-color, #ffffff);
-      }
+        :root {
+            --bg-dark: #0f0f1b;
+            --panel-bg: #1a1a2e;
+            --panel-border: #2a2a4a;
+            --text-main: #e0e0e0;
+            --accent-gold: #ffcc00;
+            
+            /* Item Rarities */
+            --rarity-common: #a0a0a0;
+            --rarity-uncommon: #4caf50;
+            --rarity-rare: #2196f3;
+            --rarity-epic: #9c27b0;
+            --rarity-legendary: #ff9800;
+        }
 
-      * {
-        box-sizing: border-box;
-        -webkit-tap-highlight-color: transparent;
-      }
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 0;
+        }
 
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-      }
+        body {
+            background-color: #050508;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
 
-      body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: system-ui, -apple-system, "Vazirmatn", Tahoma, sans-serif;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 28px;
-        padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
-        user-select: none;
-        touch-action: manipulation;
-      }
+        #app-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100vh;
+            max-height: 880px;
+            background-color: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--panel-border);
+        }
 
-      .greet {
-        color: var(--hint);
-        font-size: 15px;
-        margin: 0;
-      }
+        /* Top Header / Stats */
+        header {
+            background: #121222;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--panel-border);
+        }
 
-      .score {
-        font-size: 72px;
-        font-weight: 800;
-        margin: 0;
-        font-variant-numeric: tabular-nums;
-      }
+        .hero-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-      .tap {
-        width: 200px;
-        height: 200px;
-        border-radius: 50%;
-        border: 0;
-        background: var(--btn);
-        color: var(--btn-text);
-        font-size: 22px;
-        font-weight: 700;
-        cursor: pointer;
-        box-shadow: 0 10px 0 rgba(0, 0, 0, 0.18);
-        transition: transform 0.06s, box-shadow 0.06s;
-      }
+        .hero-avatar {
+            width: 40px;
+            height: 40px;
+            background: #2a2a4a;
+            border: 2px solid var(--accent-gold);
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            font-size: 18px;
+        }
 
-      .tap:active {
-        transform: translateY(8px);
-        box-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
-      }
+        .bars-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 140px;
+        }
 
-      .reset {
-        background: none;
-        border: 0;
-        color: var(--hint);
-        font-size: 14px;
-        cursor: pointer;
-      }
+        .bar-outer {
+            width: 100%;
+            height: 10px;
+            background: #222;
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #444;
+        }
+
+        .bar-inner {
+            height: 100%;
+            width: 100%;
+            transition: width 0.2s ease;
+        }
+
+        .hp-bar { background: #e53935; }
+        .mana-bar { background: #1e88e5; }
+        .xp-bar { background: #8e24aa; }
+
+        .currency-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            font-size: 12px;
+            font-weight: bold;
+            gap: 2px;
+        }
+
+        .gold-txt { color: #ffd700; }
+        .shards-txt { color: #00e5ff; }
+
+        /* Stage Progress Navigation */
+        .stage-bar {
+            background: #18182a;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        /* Battle Canvas Stage */
+        #battle-stage {
+            flex: 1;
+            position: relative;
+            background: #151525;
+            background-image: 
+                radial-gradient(circle at 50% 50%, rgba(30, 30, 60, 0.4) 0%, rgba(10, 10, 20, 0.8) 100%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 20px 20px, 20px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 20px 30px 40px 30px;
+            overflow: hidden;
+        }
+
+        /* Pixel Entities */
+        .entity {
+            width: 64px;
+            height: 64px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            transition: transform 0.1s ease;
+        }
+
+        .entity-sprite {
+            width: 48px;
+            height: 48px;
+            image-rendering: pixelated;
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .hero-sprite {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%234b7bec" d="M6 2h4v2H6zM5 4h6v4H5zM4 8h8v6H4z"/><path fill="%23fed330" d="M7 6h2v2H7z"/></svg>');
+        }
+
+        .enemy-sprite {
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="%23fc5c65" d="M4 4h8v8H4z"/><path fill="%2326de81" d="M6 6h1v2H6zM9 6h1v2H9z"/></svg>');
+        }
+
+        .entity-hp {
+            width: 50px;
+            height: 4px;
+            background: #333;
+            margin-bottom: 4px;
+            border: 1px solid #000;
+        }
+
+        .entity-hp-fill {
+            height: 100%;
+            background: #2ecc71;
+            width: 100%;
+        }
+
+        .floating-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 16px;
+            animation: floatUp 0.8s ease-out forwards;
+            pointer-events: none;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-30px); }
+        }
+
+        /* Action/Skill Bar */
+        .skill-bar {
+            background: #121222;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            padding: 8px;
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .skill-btn {
+            background: #22223a;
+            border: 1px solid #3d3d66;
+            color: white;
+            padding: 8px 4px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .skill-btn:active { transform: scale(0.95); }
+        .skill-btn.cooldown::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+        }
+
+        /* View Content Panels */
+        .view-panel {
+            display: none;
+            flex: 1;
+            background: var(--panel-bg);
+            padding: 12px;
+            overflow-y: auto;
+        }
+
+        .view-panel.active { display: block; }
+
+        /* Navigation Bar Bottom */
+        nav {
+            background: #0d0d18;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            border-top: 2px solid var(--panel-border);
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: #888;
+            padding: 12px 0;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .nav-btn.active {
+            color: var(--accent-gold);
+            background: #151528;
+        }
+
+        /* Grid & Equipment Styles */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .item-slot {
+            width: 100%;
+            aspect-ratio: 1;
+            background: #121222;
+            border: 1px solid #333;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .item-slot.equipped {
+            border-color: var(--accent-gold);
+        }
+
+        /* Rarity Borders */
+        .rarity-1 { border-color: var(--rarity-common) !important; color: var(--rarity-common); }
+        .rarity-2 { border-color: var(--rarity-uncommon) !important; color: var(--rarity-uncommon); }
+        .rarity-3 { border-color: var(--rarity-rare) !important; color: var(--rarity-rare); }
+        .rarity-4 { border-color: var(--rarity-epic) !important; color: var(--rarity-epic); }
+        .rarity-5 { border-color: var(--rarity-legendary) !important; color: var(--rarity-legendary); box-shadow: 0 0 6px var(--rarity-legendary); }
+
+        /* Modal Dialogs */
+        .modal {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100;
+            padding: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border: 2px solid var(--accent-gold);
+            padding: 16px;
+            border-radius: 6px;
+            width: 100%;
+            max-width: 320px;
+        }
+
+        .btn {
+            background: #2b2b48;
+            border: 1px solid #484878;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 6px;
+            width: 100%;
+        }
+
+        .btn:hover { background: #3b3b68; }
+        .btn-accent { background: #d35400; border-color: #e67e22; }
+
+        /* Chest Gacha Roulette */
+        .roulette-container {
+            height: 60px;
+            background: #10101c;
+            border: 2px solid var(--accent-gold);
+            margin: 15px 0;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .roulette-track {
+            display: flex;
+            position: absolute;
+            left: 0;
+            transition: transform 3s cubic-bezier(0.1, 1, 0.1, 1);
+        }
+
+        .roulette-item {
+            min-width: 50px;
+            height: 50px;
+            background: #1a1a2e;
+            border: 1px solid #333;
+            margin: 0 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .roulette-pointer {
+            position: absolute;
+            top: 0; bottom: 0; left: 50%;
+            width: 2px;
+            background: red;
+            z-index: 2;
+            transform: translateX(-50%);
+        }
     </style>
-  </head>
-  <body>
-    <p class="greet" id="greet">سلام!</p>
-    <p class="score" id="score">0</p>
-    <button class="tap" id="tap">بزن!</button>
-    <button class="reset" id="reset">شروع دوباره</button>
+</head>
+<body>
 
-    <script>
-      const state = { score: 0, perTap: 1 };
+<div id="app-container">
+    <!-- Top Bar -->
+    <header>
+        <div class="hero-profile">
+            <div class="hero-avatar">🗡️</div>
+            <div class="bars-container">
+                <div class="bar-outer"><div id="hero-hp-bar" class="bar-inner hp-bar"></div></div>
+                <div class="bar-outer"><div id="hero-mana-bar" class="bar-inner mana-bar"></div></div>
+                <div class="bar-outer"><div id="hero-xp-bar" class="bar-inner xp-bar"></div></div>
+            </div>
+        </div>
+        <div class="currency-info">
+            <span id="lvl-display">Lv. 1</span>
+            <span class="gold-txt">🪙 <span id="gold-display">0</span></span>
+            <span class="shards-txt">🔷 <span id="shards-display">0</span></span>
+        </div>
+    </header>
 
-      const tg = window.Telegram && window.Telegram.WebApp;
-      if (tg) {
-        tg.ready();
-        tg.expand();
-        const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
-        if (user) document.getElementById('greet').textContent = 'سلام ' + user.first_name + '!';
-      }
+    <!-- Stage Navigation -->
+    <div class="stage-bar">
+        <span id="zone-display">Zone 1: Mossy Meadow</span>
+        <span id="stage-display">Stage 1/10</span>
+    </div>
 
-      const scoreEl = document.getElementById('score');
-      const render = () => {
-        scoreEl.textContent = state.score.toLocaleString('fa-IR');
-      };
+    <!-- Battle Stage -->
+    <div id="battle-stage">
+        <!-- Hero Entity -->
+        <div class="entity" id="hero-entity">
+            <div class="entity-hp"><div id="hero-hp-fill" class="entity-hp-fill"></div></div>
+            <div class="entity-sprite hero-sprite"></div>
+        </div>
 
-      const save = () => {
-        const data = JSON.stringify(state);
-        try {
-          if (tg && tg.CloudStorage) tg.CloudStorage.setItem('state', data);
-          else localStorage.setItem('state', data);
-        } catch (e) {}
-      };
+        <!-- Enemy Entity -->
+        <div class="entity" id="enemy-entity">
+            <div class="entity-hp"><div id="enemy-hp-fill" class="entity-hp-fill"></div></div>
+            <div class="entity-sprite enemy-sprite" id="enemy-sprite"></div>
+        </div>
+    </div>
 
-      const load = () => {
-        const apply = (raw) => {
-          try {
-            Object.assign(state, JSON.parse(raw));
-          } catch (e) {}
-          render();
+    <!-- Active Skill Bar -->
+    <div class="skill-bar">
+        <button class="skill-btn" onclick="useSkill(1)">
+            <span>💥 Strike</span>
+            <span style="font-size: 9px; color: #aaa;">0 MP</span>
+        </button>
+        <button class="skill-btn" onclick="useSkill(2)">
+            <span>🔥 Fireball</span>
+            <span style="font-size: 9px; color: #aaa;">15 MP</span>
+        </button>
+        <button class="skill-btn" onclick="useSkill(3)">
+            <span>💚 Heal</span>
+            <span style="font-size: 9px; color: #aaa;">25 MP</span>
+        </button>
+        <button class="skill-btn" onclick="useSkill(4)">
+            <span>⚡ Execute</span>
+            <span style="font-size: 9px; color: #aaa;">30 MP</span>
+        </button>
+    </div>
+
+    <!-- Main Dynamic Views -->
+    <!-- 1. HERO VIEW -->
+    <div id="view-hero" class="view-panel active">
+        <h3 style="color: var(--accent-gold); border-bottom: 1px solid #333; padding-bottom: 4px;">Hero Training</h3>
+        <div style="margin-top: 10px; font-size: 13px; line-height: 1.8;">
+            <div>Attack Power: <strong id="stat-atk" style="color: #ff5252;">10</strong></div>
+            <div>Defense: <strong id="stat-def" style="color: #448aff;">5</strong></div>
+            <div>Max Health: <strong id="stat-hp" style="color: #69f0ae;">100</strong></div>
+            <div>Crit Chance: <strong id="stat-crit" style="color: #ffd700;">5%</strong></div>
+        </div>
+        <div style="margin-top: 15px;">
+            <button class="btn" onclick="trainHero('atk')">Train ATK (+2) - 🪙 <span id="cost-atk">20</span></button>
+            <button class="btn" onclick="trainHero('hp')">Train HP (+15) - 🪙 <span id="cost-hp">20</span></button>
+        </div>
+    </div>
+
+    <!-- 2. INVENTORY VIEW -->
+    <div id="view-inventory" class="view-panel">
+        <h3 style="color: var(--accent-gold); border-bottom: 1px solid #333; padding-bottom: 4px;">Inventory (<span id="inv-count">0</span>/30)</h3>
+        <div class="inventory-grid" id="inventory-grid"></div>
+    </div>
+
+    <!-- 3. GACHA CHEST VIEW -->
+    <div id="view-chest" class="view-panel" style="text-align: center;">
+        <h3 style="color: var(--accent-gold); margin-bottom: 10px;">Shard Chest</h3>
+        <p style="font-size: 12px; color: #aaa;">Open chests to unlock powerful weapons!</p>
+        
+        <div class="roulette-container">
+            <div class="roulette-pointer"></div>
+            <div class="roulette-track" id="roulette-track"></div>
+        </div>
+
+        <button class="btn btn-accent" id="open-chest-btn" onclick="spinChest()">Open Chest (🪙 100)</button>
+    </div>
+
+    <!-- 4. MARKET VIEW -->
+    <div id="view-market" class="view-panel">
+        <h3 style="color: var(--accent-gold); border-bottom: 1px solid #333; padding-bottom: 4px;">Merchant Shop</h3>
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: #121222; padding: 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div>Health Potion</div>
+                    <div style="font-size: 10px; color: #aaa;">Restores 50% HP immediately</div>
+                </div>
+                <button class="btn" style="width: auto;" onclick="buyPotion()">🪙 50</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Footer -->
+    <nav>
+        <button class="nav-btn active" onclick="switchTab('hero', this)"><span>🗡️</span>Hero</button>
+        <button class="nav-btn" onclick="switchTab('inventory', this)"><span>🎒</span>Bag</button>
+        <button class="nav-btn" onclick="switchTab('chest', this)"><span>📦</span>Chest</button>
+        <button class="nav-btn" onclick="switchTab('market', this)"><span>⚖️</span>Market</button>
+    </nav>
+
+    <!-- Item Detail Modal -->
+    <div class="modal" id="item-modal">
+        <div class="modal-content">
+            <h3 id="modal-title" style="margin-bottom: 8px;">Weapon Title</h3>
+            <div id="modal-details" style="font-size: 12px; color: #ccc; margin-bottom: 12px; line-height: 1.5;"></div>
+            <button class="btn btn-accent" id="modal-equip-btn">Equip</button>
+            <button class="btn" onclick="salvageSelectedItem()" style="background: #8e24aa;">Salvage into Shards</button>
+            <button class="btn" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    /* Game State */
+    const gameState = {
+        hero: {
+            level: 1,
+            xp: 0,
+            maxXp: 30,
+            hp: 100,
+            maxHp: 100,
+            mana: 50,
+            maxMana: 50,
+            baseAtk: 10,
+            baseDef: 5,
+            gold: 100,
+            shards: 10,
+            critChance: 0.05,
+            equippedWeapon: null
+        },
+        costs: {
+            atk: 20,
+            hp: 20
+        },
+        zone: 1,
+        stage: 1,
+        inventory: [],
+        currentEnemy: null,
+        selectedItemIndex: null
+    };
+
+    const ZONES = [
+        "Mossy Meadow", "Bandit Road", "Whispering Crypts", "Flame Caverns",
+        "Frozen Realm", "Witch Forest", "Sunken Citadel", "Void Breach"
+    ];
+
+    const ENEMIES = [
+        { name: "Slime", hp: 30, atk: 4, xp: 10, gold: 8, sprite: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><path fill=\"%2326de81\" d=\"M4 6h8v6H4z\"/></svg>')" },
+        { name: "Bandit", hp: 50, atk: 8, xp: 18, gold: 15, sprite: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><path fill=\"%23e74c3c\" d=\"M4 4h8v8H4z\"/></svg>')" },
+        { name: "Skeleton", hp: 80, atk: 14, xp: 30, gold: 25, sprite: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><path fill=\"%23ecf0f1\" d=\"M4 4h8v8H4z\"/></svg>')" },
+        { name: "Fire Imp", hp: 120, atk: 22, xp: 50, gold: 40, sprite: "url('data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><path fill=\"%23e67e22\" d=\"M4 4h8v8H4z\"/></svg>')" }
+    ];
+
+    const WEAPON_NAMES = [
+        ["Rusty Iron Sword", "Wooden Training Blade"],
+        ["Refined Steel Blade", "Guardsman Saber"],
+        ["Runic Longsword", "Engraved Claymore"],
+        ["Flameburst Blade", "Thunderstrike Greatsword"],
+        ["Emberfall Shard Blade", "Void Shatterer"]
+    ];
+
+    /* Initialization */
+    function init() {
+        spawnEnemy();
+        gameLoop();
+        render();
+    }
+
+    /* Core Battle Loop */
+    let lastAttackTime = 0;
+    function gameLoop(time = 0) {
+        if (time - lastAttackTime > 1000) {
+            heroAutoAttack();
+            enemyAutoAttack();
+            regenMana();
+            lastAttackTime = time;
+        }
+        requestAnimationFrame(gameLoop);
+    }
+
+    function heroAutoAttack() {
+        if (!gameState.currentEnemy) return;
+
+        let totalAtk = gameState.hero.baseAtk + (gameState.hero.equippedWeapon ? gameState.hero.equippedWeapon.atk : 0);
+        let isCrit = Math.random() < gameState.hero.critChance;
+        let dmg = isCrit ? Math.floor(totalAtk * 1.5) : totalAtk;
+
+        gameState.currentEnemy.hp -= dmg;
+        showFloatingText(`-${dmg}${isCrit ? '!' : ''}`, '#enemy-entity', isCrit ? '#ffd700' : '#ffffff');
+
+        if (gameState.currentEnemy.hp <= 0) {
+            onEnemyDefeated();
+        }
+        render();
+    }
+
+    function enemyAutoAttack() {
+        if (!gameState.currentEnemy || gameState.currentEnemy.hp <= 0) return;
+
+        let dmg = Math.max(1, gameState.currentEnemy.atk - Math.floor(gameState.hero.baseDef / 3));
+        gameState.hero.hp = Math.max(0, gameState.hero.hp - dmg);
+        showFloatingText(`-${dmg}`, '#hero-entity', '#ff5252');
+
+        if (gameState.hero.hp <= 0) {
+            // Respawn penalty
+            gameState.hero.hp = gameState.hero.maxHp;
+            gameState.stage = Math.max(1, gameState.stage - 1);
+            spawnEnemy();
+        }
+        render();
+    }
+
+    function regenMana() {
+        if (gameState.hero.mana < gameState.hero.maxMana) {
+            gameState.hero.mana = Math.min(gameState.hero.maxMana, gameState.hero.mana + 5);
+        }
+    }
+
+    function onEnemyDefeated() {
+        gameState.hero.gold += gameState.currentEnemy.gold;
+        addXp(gameState.currentEnemy.xp);
+
+        // Loot drop roll
+        if (Math.random() < 0.4) {
+            dropLoot();
+        }
+
+        // Progression
+        gameState.stage++;
+        if (gameState.stage > 10) {
+            gameState.stage = 1;
+            gameState.zone = Math.min(8, gameState.zone + 1);
+        }
+        spawnEnemy();
+    }
+
+    function spawnEnemy() {
+        let baseEnemy = ENEMIES[Math.min(ENEMIES.length - 1, Math.floor((gameState.zone - 1) / 2))];
+        let scale = 1 + (gameState.stage - 1) * 0.15;
+        gameState.currentEnemy = {
+            name: baseEnemy.name,
+            maxHp: Math.floor(baseEnemy.hp * scale),
+            hp: Math.floor(baseEnemy.hp * scale),
+            atk: Math.floor(baseEnemy.atk * scale),
+            xp: Math.floor(baseEnemy.xp * scale),
+            gold: Math.floor(baseEnemy.gold * scale),
+            sprite: baseEnemy.sprite
+        };
+    }
+
+    function addXp(amount) {
+        gameState.hero.xp += amount;
+        if (gameState.hero.xp >= gameState.hero.maxXp) {
+            gameState.hero.xp -= gameState.hero.maxXp;
+            gameState.hero.level++;
+            gameState.hero.maxXp = Math.floor(30 * Math.pow(1.4, gameState.hero.level - 1));
+            gameState.hero.baseAtk += 3;
+            gameState.hero.maxHp += 20;
+            gameState.hero.hp = gameState.hero.maxHp;
+            showFloatingText("LEVEL UP!", '#hero-entity', '#ffcc00');
+        }
+    }
+
+    /* Skills System */
+    function useSkill(slot) {
+        if (!gameState.currentEnemy) return;
+
+        if (slot === 1) { // Strike
+            let dmg = gameState.hero.baseAtk * 2;
+            gameState.currentEnemy.hp -= dmg;
+            showFloatingText(`-${dmg}`, '#enemy-entity', '#ff9800');
+        } else if (slot === 2 && gameState.hero.mana >= 15) { // Fireball
+            gameState.hero.mana -= 15;
+            let dmg = gameState.hero.baseAtk * 3;
+            gameState.currentEnemy.hp -= dmg;
+            showFloatingText(`🔥 -${dmg}`, '#enemy-entity', '#ff5722');
+        } else if (slot === 3 && gameState.hero.mana >= 25) { // Heal
+            gameState.hero.mana -= 25;
+            let heal = Math.floor(gameState.hero.maxHp * 0.4);
+            gameState.hero.hp = Math.min(gameState.hero.maxHp, gameState.hero.hp + heal);
+            showFloatingText(`+${heal}`, '#hero-entity', '#4caf50');
+        } else if (slot === 4 && gameState.hero.mana >= 30) { // Execute
+            gameState.hero.mana -= 30;
+            let dmg = gameState.hero.baseAtk * 4;
+            gameState.currentEnemy.hp -= dmg;
+            showFloatingText(`⚡ -${dmg}`, '#enemy-entity', '#9c27b0');
+        }
+
+        if (gameState.currentEnemy.hp <= 0) onEnemyDefeated();
+        render();
+    }
+
+    /* Items & Gacha System */
+    function generateItem(rarity = null) {
+        if (!rarity) {
+            let rand = Math.random();
+            if (rand < 0.62) rarity = 1;
+            else if (rand < 0.88) rarity = 2;
+            else if (rand < 0.97) rarity = 3;
+            else if (rand < 0.997) rarity = 4;
+            else rarity = 5;
+        }
+
+        let names = WEAPON_NAMES[rarity - 1];
+        let name = names[Math.floor(Math.random() * names.length)];
+        let baseAtk = rarity * 8 + Math.floor(Math.random() * 5);
+
+        return {
+            id: Date.now() + Math.random(),
+            name: name,
+            rarity: rarity,
+            atk: baseAtk,
+            icon: '🗡️'
+        };
+    }
+
+    function dropLoot() {
+        if (gameState.inventory.length >= 30) return;
+        let item = generateItem();
+        gameState.inventory.push(item);
+        showFloatingText(`Looted: ${item.name}!`, '#hero-entity', '#2196f3');
+    }
+
+    function spinChest() {
+        if (gameState.hero.gold < 100) return;
+        gameState.hero.gold -= 100;
+
+        const track = document.getElementById('roulette-track');
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(0)';
+
+        track.innerHTML = '';
+        let items = [];
+        for (let i = 0; i < 20; i++) {
+            let item = generateItem();
+            items.push(item);
+            let div = document.createElement('div');
+            div.className = `roulette-item rarity-${item.rarity}`;
+            div.innerText = item.icon;
+            track.appendChild(div);
+        }
+
+        setTimeout(() => {
+            track.style.transition = 'transform 3s cubic-bezier(0.1, 1, 0.1, 1)';
+            track.style.transform = 'translateX(-800px)';
+        }, 50);
+
+        setTimeout(() => {
+            let wonItem = items[16];
+            if (gameState.inventory.length < 30) {
+                gameState.inventory.push(wonItem);
+            }
+            render();
+        }, 3100);
+
+        render();
+    }
+
+    /* UI Rendering & Updates */
+    function render() {
+        // Stats Display
+        document.getElementById('lvl-display').innerText = `Lv. ${gameState.hero.level}`;
+        document.getElementById('gold-display').innerText = gameState.hero.gold;
+        document.getElementById('shards-display').innerText = gameState.hero.shards;
+
+        // Progress Bars
+        document.getElementById('hero-hp-bar').style.width = `${(gameState.hero.hp / gameState.hero.maxHp) * 100}%`;
+        document.getElementById('hero-mana-bar').style.width = `${(gameState.hero.mana / gameState.hero.maxMana) * 100}%`;
+        document.getElementById('hero-xp-bar').style.width = `${(gameState.hero.xp / gameState.hero.maxXp) * 100}%`;
+
+        // Entity Visuals
+        document.getElementById('hero-hp-fill').style.width = `${(gameState.hero.hp / gameState.hero.maxHp) * 100}%`;
+        if (gameState.currentEnemy) {
+            document.getElementById('enemy-hp-fill').style.width = `${(gameState.currentEnemy.hp / gameState.currentEnemy.maxHp) * 100}%`;
+            document.getElementById('enemy-sprite').style.backgroundImage = gameState.currentEnemy.sprite;
+        }
+
+        // Zone Info
+        document.getElementById('zone-display').innerText = `Zone ${gameState.zone}: ${ZONES[gameState.zone - 1]}`;
+        document.getElementById('stage-display').innerText = `Stage ${gameState.stage}/10`;
+
+        // Training Tab Stats
+        let totalAtk = gameState.hero.baseAtk + (gameState.hero.equippedWeapon ? gameState.hero.equippedWeapon.atk : 0);
+        document.getElementById('stat-atk').innerText = totalAtk;
+        document.getElementById('stat-def').innerText = gameState.hero.baseDef;
+        document.getElementById('stat-hp').innerText = gameState.hero.maxHp;
+        document.getElementById('cost-atk').innerText = gameState.costs.atk;
+        document.getElementById('cost-hp').innerText = gameState.costs.hp;
+
+        // Inventory
+        renderInventory();
+    }
+
+    function renderInventory() {
+        const grid = document.getElementById('inventory-grid');
+        grid.innerHTML = '';
+        document.getElementById('inv-count').innerText = gameState.inventory.length;
+
+        for (let i = 0; i < 30; i++) {
+            let slot = document.createElement('div');
+            slot.className = 'item-slot';
+            let item = gameState.inventory[i];
+
+            if (item) {
+                slot.classList.add(`rarity-${item.rarity}`);
+                slot.innerText = item.icon;
+                if (gameState.hero.equippedWeapon && gameState.hero.equippedWeapon.id === item.id) {
+                    slot.classList.add('equipped');
+                }
+                slot.onclick = () => openModal(i);
+            }
+            grid.appendChild(slot);
+        }
+    }
+
+    /* UI Interactions */
+    function switchTab(tabName, btn) {
+        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`view-${tabName}`).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function trainHero(stat) {
+        if (stat === 'atk' && gameState.hero.gold >= gameState.costs.atk) {
+            gameState.hero.gold -= gameState.costs.atk;
+            gameState.hero.baseAtk += 2;
+            gameState.costs.atk = Math.floor(gameState.costs.atk * 1.5);
+        } else if (stat === 'hp' && gameState.hero.gold >= gameState.costs.hp) {
+            gameState.hero.gold -= gameState.costs.hp;
+            gameState.hero.maxHp += 15;
+            gameState.hero.hp += 15;
+            gameState.costs.hp = Math.floor(gameState.costs.hp * 1.5);
+        }
+        render();
+    }
+
+    function openModal(index) {
+        gameState.selectedItemIndex = index;
+        let item = gameState.inventory[index];
+        if (!item) return;
+
+        document.getElementById('modal-title').innerText = item.name;
+        document.getElementById('modal-title').className = `rarity-${item.rarity}`;
+        document.getElementById('modal-details').innerHTML = `
+            Type: Weapon<br>
+            Rarity Tier: ${item.rarity}<br>
+            Attack Bonus: +${item.atk}
+        `;
+
+        let equipBtn = document.getElementById('modal-equip-btn');
+        let isEquipped = gameState.hero.equippedWeapon && gameState.hero.equippedWeapon.id === item.id;
+        equipBtn.innerText = isEquipped ? "Unequip" : "Equip";
+        equipBtn.onclick = () => {
+            if (isEquipped) gameState.hero.equippedWeapon = null;
+            else gameState.hero.equippedWeapon = item;
+            closeModal();
+            render();
         };
 
-        try {
-          if (tg && tg.CloudStorage) {
-            tg.CloudStorage.getItem('state', (err, v) => v && apply(v));
-          } else {
-            const v = localStorage.getItem('state');
-            if (v) apply(v);
-          }
-        } catch (e) {}
-      };
+        document.getElementById('item-modal').style.display = 'flex';
+    }
 
-      document.getElementById('tap').addEventListener('click', () => {
-        state.score += state.perTap;
-        render();
-        save();
+    function closeModal() {
+        document.getElementById('item-modal').style.display = 'none';
+    }
 
-        if (tg && tg.HapticFeedback) {
-          tg.HapticFeedback.impactOccurred('light');
+    function salvageSelectedItem() {
+        if (gameState.selectedItemIndex === null) return;
+        let item = gameState.inventory[gameState.selectedItemIndex];
+
+        if (gameState.hero.equippedWeapon && gameState.hero.equippedWeapon.id === item.id) {
+            gameState.hero.equippedWeapon = null;
         }
-      });
 
-      document.getElementById('reset').addEventListener('click', () => {
-        state.score = 0;
+        gameState.hero.shards += item.rarity * 2;
+        gameState.inventory.splice(gameState.selectedItemIndex, 1);
+        closeModal();
         render();
-        save();
-      });
+    }
 
-      load();
-      render();
-    </script>
-  </body>
+    function buyPotion() {
+        if (gameState.hero.gold >= 50) {
+            gameState.hero.gold -= 50;
+            gameState.hero.hp = Math.min(gameState.hero.maxHp, gameState.hero.hp + Math.floor(gameState.hero.maxHp * 0.5));
+            render();
+        }
+    }
+
+    function showFloatingText(text, parentSelector, color) {
+        const parent = document.querySelector(parentSelector);
+        if (!parent) return;
+        const el = document.createElement('div');
+        el.className = 'floating-text';
+        el.innerText = text;
+        el.style.color = color;
+        el.style.top = '10px';
+        parent.appendChild(el);
+        setTimeout(() => el.remove(), 800);
+    }
+
+    // Launch
+    init();
+</script>
+</body>
 </html>
