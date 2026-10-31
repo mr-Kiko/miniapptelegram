@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>کلیکر</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  :root {
+    --bg: var(--tg-theme-bg-color, #f3f6f4);
+    --text: var(--tg-theme-text-color, #14231c);
+    --hint: var(--tg-theme-hint-color, #6b7d74);
+    --btn: var(--tg-theme-button-color, #1f9d6b);
+    --btn-text: var(--tg-theme-button-text-color, #ffffff);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Vazirmatn", Tahoma, sans-serif;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 28px; padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+    user-select: none; touch-action: manipulation;
+  }
+  .greet { color: var(--hint); font-size: 15px; margin: 0; }
+  .score { font-size: 72px; font-weight: 800; margin: 0; font-variant-numeric: tabular-nums; }
+  .tap {
+    width: 200px; height: 200px; border-radius: 50%; border: 0;
+    background: var(--btn); color: var(--btn-text);
+    font-size: 22px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 10px 0 rgba(0,0,0,.18);
+    transition: transform .06s, box-shadow .06s;
+  }
+  .tap:active { transform: translateY(8px); box-shadow: 0 2px 0 rgba(0,0,0,.18); }
+  .reset { background: none; border: 0; color: var(--hint); font-size: 14px; cursor: pointer; }
+</style>
+</head>
+<body>
+  <p class="greet" id="greet">سلام!</p>
+  <p class="score" id="score">0</p>
+  <button class="tap" id="tap">بزن!</button>
+  <button class="reset" id="reset">شروع دوباره</button>
+
+<script>
+  const state = { score: 0, perTap: 1 };
+
+  const tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) {
+    tg.ready();
+    tg.expand();
+    const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (user) document.getElementById('greet').textContent = 'سلام ' + user.first_name + '!';
+  }
+
+  const scoreEl = document.getElementById('score');
+  const render = () => { scoreEl.textContent = state.score.toLocaleString('fa-IR'); };
+
+  const save = () => {
+    const data = JSON.stringify(state);
+    try {
+      if (tg && tg.CloudStorage) tg.CloudStorage.setItem('state', data);
+      else localStorage.setItem('state', data);
+    } catch (e) {}
+  };
+  const load = () => {
+    const apply = (raw) => { try { Object.assign(state, JSON.parse(raw)); } catch (e) {} render(); };
+    try {
+      if (tg && tg.CloudStorage) tg.CloudStorage.getItem('state', (err, v) => v && apply(v));
+      else { const v = localStorage.getItem('state'); if (v) apply(v); }
+    } catch (e) {}
+  };
+
+  document.getElementById('tap').addEventListener('click', () => {
+    state.score += state.perTap;
+    render(); save();
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    state.score = 0; render(); save();
+  });
+
+  load(); render();
+</script>
+</body>
+</html>
